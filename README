@@ -1,0 +1,14 @@
+Prosty tunel napisany w Pythonie do programu Ucieszony Chat Client.
+Obecnie UCC nie ma możliwości z jego korzystania,
+ale zostanie dodana taka możliwość.
+Tunel nie jest potrzebny do działania UCC,
+bo sam UCC posiada mechanizm autoryzacji do Czata Onetu.
+Jego główne przeznaczenie to stworzenie proxy na zdalnym
+serwerze lub współdziałanie z serwerem sesji ZNC.
+
+Do działania wymaga trzeciej wersji Pythona.
+Uruchomienie:
+
+  python3 tucc.py
+
+Prosta konfiguracja jest w samym skrypcie. Domyślnie można niczego nie zmieniać.
