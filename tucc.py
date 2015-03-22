@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Tunel Ucieszony Chat Client
-# This TUCC is sipmle tunel with Python for UCC
+# TUCC is sipmle tunel with Python for UCC
 # Copyright (C) 2015 Paweł Ostrowski
 #
 # This program is free software; you can redistribute it and/or
@@ -135,7 +135,7 @@ def http(sock_client, con_id, auth_step, method, host, port, stock, content, coo
 	except socket.error:
 		sock_http.close()
 		print("%s%s: Nie udało się połączyć z: %s" % (get_date_time(con_id), auth_step, host))
-		send_client_info(sock_client, "Nie udało się połączyć z: %s" % host)
+		send_client_info(sock_client, "\x02Nie udało się połączyć z: %s" % host)
 		thread_end(sock_client, con_id)
 
 	# utwórz zapytanie do hosta
@@ -166,7 +166,7 @@ def http(sock_client, con_id, auth_step, method, host, port, stock, content, coo
 		except socket.error:
 			sock_http.close()
 			print("%s%s: Nie udało się wysłać danych do: %s" % (get_date_time(con_id), auth_step, host))
-			send_client_info(sock_client, "Nie udało się wysłać danych do: %s" % host)
+			send_client_info(sock_client, "\x02Nie udało się wysłać danych do: %s" % host)
 			thread_end(sock_client, con_id)
 
 		# pobierz odpowiedź od hosta
@@ -176,7 +176,7 @@ def http(sock_client, con_id, auth_step, method, host, port, stock, content, coo
 		except socket.error:
 			sock_http.close()
 			print("%s%s: Nie udało się pobrać danych z: %s" % (get_date_time(con_id), auth_step, host))
-			send_client_info(sock_client, "Nie udało się pobrać danych z: %s" % host)
+			send_client_info(sock_client, "\x02Nie udało się pobrać danych z: %s" % host)
 			thread_end(sock_client, con_id)
 
 	# połączenie na porcie 443 będzie zaszyfrowane
@@ -194,7 +194,7 @@ def http(sock_client, con_id, auth_step, method, host, port, stock, content, coo
 			del ssl
 			sock_http.close()
 			print("%s%s: Nie udało się wysłać danych do: %s [SSL]" % (get_date_time(con_id), auth_step, host))
-			send_client_info(sock_client, "Nie udało się wysłać danych do: %s [SSL]" % host)
+			send_client_info(sock_client, "\x02Nie udało się wysłać danych do: %s [SSL]" % host)
 			thread_end(sock_client, con_id)
 
 		# pobierz odpowiedź od hosta (SSL)
@@ -206,7 +206,7 @@ def http(sock_client, con_id, auth_step, method, host, port, stock, content, coo
 			del ssl
 			sock_http.close()
 			print("%s%s: Nie udało się pobrać danych z: %s [SSL]" % (get_date_time(con_id), auth_step, host))
-			send_client_info(sock_client, "Nie udało się pobrać danych z: %s [SSL]" % host)
+			send_client_info(sock_client, "\x02Nie udało się pobrać danych z: %s [SSL]" % host)
 			thread_end(sock_client, con_id)
 
 		del sock_ssl
@@ -370,12 +370,12 @@ def auth_start(sock_client, sock_info, con_id):
 	# gdy nie udało się pobrać uoKey, wyświetl zwrócony błąd i zakończ
 	if uokey == "":
 		print("%sBłąd podczas procesu logowania (brak uoKey), powód: %s" % (get_date_time(con_id), zuousername))
-		send_client_info(sock_client, "Błąd podczas procesu logowania (brak uoKey), powód: %s" % zuousername)
+		send_client_info(sock_client, "\x02Błąd podczas procesu logowania (brak uoKey), powód: %s" % zuousername)
 		thread_end(sock_client, con_id)
 
 	# pobranie uoKey i zuoUsername umożliwia dalsze logowanie, tym razem do IRC
-	print("%sRozpoznany użytkownik na Czacie Onetu: \x02%s" % (get_date_time(con_id), zuousername))
-	send_client_info(sock_client, "Rozpoznany użytkownik: \x02%s\nauthIrcAll..." % zuousername)
+	print("%sRozpoznany użytkownik na Czacie Onetu: %s" % (get_date_time(con_id), zuousername))
+	send_client_info(sock_client, "Rozpoznany użytkownik: \x02%s\r\n\x02authIrcAll..." % zuousername)
 
 	# gniazdo do połączenia z Czatem Onetu
 	sock_irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -386,7 +386,7 @@ def auth_start(sock_client, sock_info, con_id):
 	except socket.error:
 		sock_irc.close()
 		print("%sNie udało się połączyć z: czat-app.onet.pl" % get_date_time(con_id))
-		send_client_info(sock_client, "Nie udało się połączyć z: czat-app.onet.pl")
+		send_client_info(sock_client, "\x02Nie udało się połączyć z: czat-app.onet.pl")
 		thread_end(sock_client, con_id)
 
 	# odbierz z serwera Onetu pierwszą odpowiedź w stylu ":cf1f4.onet NOTICE Auth :*** Looking up your hostname..." i prześlij ją do klienta
@@ -421,13 +421,13 @@ def auth_start(sock_client, sock_info, con_id):
 	except IndexError:
 		sock_irc.close()
 		print("%sBrak AUTHKEY!" % get_date_time(con_id))
-		send_client_info(sock_client, "Brak AUTHKEY!")
+		send_client_info(sock_client, "\x02Brak AUTHKEY!")
 		thread_end(sock_client, con_id)
 
 	if len(authkey) != 16:
 		sock_irc.close()
 		print("%sAUTHKEY nie zawiera oczekiwanych 16 znaków (możliwa zmiana autoryzacji)." % get_date_time(con_id))
-		send_client_info(sock_client, "AUTHKEY nie zawiera oczekiwanych 16 znaków (możliwa zmiana autoryzacji).")
+		send_client_info(sock_client, "\x02AUTHKEY nie zawiera oczekiwanych 16 znaków (możliwa zmiana autoryzacji).")
 		thread_end(sock_client, con_id)
 
 	# wyślij do serwera Onetu obliczony AUTHKEY
