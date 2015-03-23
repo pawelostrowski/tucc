@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+
 # Tunel Ucieszony Chat Client
 # TUCC is sipmle tunel with Python for UCC
 # Copyright (C) 2015 Paweł Ostrowski
@@ -18,6 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Tunel Ucieszony Chat Client (in the file LICENSE); if not,
 # see <http://www.gnu.org/licenses/gpl-2.0.html>.
+
 
 ###############################################################################
 # Ustawienia podstawowe:
@@ -40,10 +42,15 @@ browser_ua = "Mozilla/5.0 (X11; Linux x86_64; rv:%s) Gecko/20100101 Firefox/%s" 
 # wersja apletu, którą udaje tunel
 applet_ver = "1.1(20140526-0005 - R)"
 
-# próbuj wykonać całą autoryzację przez SSL, a nie tylko samo hasło, w razie problemów można zmienić na 'True' na 'False'
+# próbuj wykonać całą autoryzację przez SSL, a nie tylko samo hasło, w razie problemów można zmienić 'True' na 'False'
 all_auth_https = True
 ###############################################################################
 
+
+print("Tunel Ucieszony Chat Client v0.1")
+print("Copyright (C) 2015 Paweł Ostrowski")
+print("Licencja: GNU General Public License v2.0 lub późniejsze wersje\n")
+print("\'Ctrl - c\' - kończy działanie skryptu, \'l + Enter\' - wyświetla aktywne połączenia\n")
 
 # ta wersja skryptu dopasowana jest do trzeciej wersji Pythona, z wersją drugą w obecnej formie skrypt nie działałby
 import sys
@@ -79,6 +86,7 @@ def signal_break(signal, frame):
 
 def thread_end(sock_client, con_id):
 	sock_client.close()
+	con_index.remove(con_id)
 	print("%sZakończono obsługę tego połączenia." % get_date_time(con_id))
 	thread.exit_thread()
 
@@ -214,7 +222,7 @@ def http(sock_client, con_id, auth_step, method, host, port, stock, content, coo
 
 	sock_http.close()
 
-	# zwróć jako string przekodowany z ISO-8859-2 na UTF-8 (to wynika z drugiej linii skryptu)
+	# zwróć dane w ISO-8859-2 jako string w UTF-8 (to wynika z drugiej linii skryptu)
 	return data_recv.decode('iso-8859-2')
 
 
@@ -347,11 +355,17 @@ def auth_start(sock_client, sock_info, con_id):
 	nick = ""
 	passwd = ""
 
+	con_index.append(con_id)
+
 	print("%sUstanowiono połączenie: [%s:%d]" % ((get_date_time(con_id), ) + sock_info))
 	send_client_info(sock_client, "\x02Połączono z tunelem, oczekiwanie na dane autoryzacji...")
 
 	while nick == "" or passwd == "":
-		data_recv = sock_client.recv(1500).decode('iso-8859-2')
+		try:
+			data_recv = sock_client.recv(1500).decode('iso-8859-2')
+
+		except socket.error:
+			thread_end(sock_client, con_id)
 
 		# jeśli jeszcze nie pobrano nicka, sprawdź, czy wysłano NICK
 		if nick == "" and "NICK" in data_recv:
@@ -390,7 +404,12 @@ def auth_start(sock_client, sock_info, con_id):
 		thread_end(sock_client, con_id)
 
 	# odbierz z serwera Onetu pierwszą odpowiedź w stylu ":cf1f4.onet NOTICE Auth :*** Looking up your hostname..." i prześlij ją do klienta
-	sock_client.send(sock_irc.recv(1500))
+	try:
+		sock_client.send(sock_irc.recv(1500))
+
+	except socket.error:
+		sock_irc.close()
+		thread_end(sock_client, con_id)
 
 	# wyślij do serwera Onetu "NICK nick"
 	send_onet_str(sock_client, sock_irc, "NICK %s" % zuousername)
@@ -399,14 +418,19 @@ def auth_start(sock_client, sock_info, con_id):
 	# lub ":cf1f4.onet 433 * ucc_test :Nickname is already in use." to pierwszą z nich prześlij do klienta, a przy drugiej zakończ dalsze działania
 	data_recv = recv_onet_str(sock_client, sock_irc)
 
-	if "433" in data_recv and ":Nickname is already in use." in data_recv:
+	if ":Nickname is already in use." in data_recv:
 		sock_irc.close()
 		print("%s%s jest już w użyciu." % (get_date_time(con_id), zuousername))
 		send_client_info(sock_client, "\x02%s\x02 jest już w użyciu." % zuousername)
 		thread_end(sock_client, con_id)
 
 	else:
-		sock_client.send(data_recv.encode('iso-8859-2'))
+		try:
+			sock_client.send(data_recv.encode('iso-8859-2'))
+
+		except socket.error:
+			sock_irc.close()
+			thread_end(sock_client, con_id)
 
 	# wyślij do serwera Onetu "AUTHKEY"
 	send_onet_str(sock_client, sock_irc, "AUTHKEY")
@@ -448,7 +472,18 @@ def auth_start(sock_client, sock_info, con_id):
 		for sock_ready in sock_inp:
 			if sock_ready == sock_client:
 				try:
-					sock_irc.send(sock_ready.recv(1500))
+					data_recv = sock_ready.recv(1500)
+
+				except socket.error:
+					sock_irc.close()
+					thread_end(sock_client, con_id)
+
+				if len(data_recv) == 0:
+					sock_irc.close()
+					thread_end(sock_client, con_id)
+
+				try:
+					sock_irc.send(data_recv)
 
 				except socket.error:
 					sock_irc.close()
@@ -456,18 +491,37 @@ def auth_start(sock_client, sock_info, con_id):
 
 			if sock_ready == sock_irc:
 				try:
-					sock_client.send(sock_ready.recv(1500))
+					data_recv = sock_ready.recv(1500)
+
+				except socket.error:
+					sock_irc.close()
+					thread_end(sock_client, con_id)
+
+				if len(data_recv) == 0:
+					sock_irc.close()
+					thread_end(sock_client, con_id)
+
+				try:
+					sock_client.send(data_recv)
 
 				except socket.error:
 					sock_irc.close()
 					thread_end(sock_client, con_id)
 
 
-# START
-print("Tunel Ucieszony Chat Client v0.1")
-print("Copyright (C) 2015 Paweł Ostrowski")
-print("Licencja: GNU General Public License v2.0 lub późniejsze wersje\n")
+def con_list():
+	while True:
+		if input() == "l":
+			# pokaż aktywne połączenia
+			if len(con_index) != 0:
+				print("-> Aktywne połączenia: %d, są to: %s" % (len(con_index), con_index))
 
+			else:
+				print("-> Obecnie nie ma aktywnych połączeń.")
+
+
+
+# START
 # obsługa sygnału przerwania (Ctrl+C)
 signal.signal(signal.SIGINT, signal_break)
 
@@ -493,6 +547,12 @@ sock_main.listen(1)
 
 # licznik powtórzonych połączeń klienta z tunelem w ramach sesji tunelu
 con_count = 1
+
+# tu będą trzymane aktywne zalogowania (same ich indeksy)
+con_index = []
+
+# wątek dla oczekiwania na wpisanie 'l'
+thread.start_new_thread(con_list, ())
 
 
 # pętla główna
