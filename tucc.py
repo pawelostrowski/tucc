@@ -459,7 +459,7 @@ def auth_start(sock_client, sock_info, con_id):
 	send_onet_str(sock_client, sock_irc, "AUTHKEY %s" % auth_code(authkey))
 
 	# wyślij do serwera Onetu USER z parametrami
-	send_onet_str(sock_client, sock_irc, "USER * %s czat-app.onet.pl :%s\r\n" % (uokey, tunel_name))
+	send_onet_str(sock_client, sock_irc, "USER * %s czat-app.onet.pl :%s" % (uokey, tunel_name))
 
 	# dodaj gniazda do zestawu select()
 	sock_list = []
@@ -485,8 +485,8 @@ def auth_start(sock_client, sock_info, con_id):
 
 				data_recv = data_recv.decode('iso-8859-2')
 
-				if "PROTOCTL" in data_recv:
-					data_recv = data_recv.replace("NAMESX", "ONETNAMESX")
+				#if "PROTOCTL NAMESX" in data_recv:
+				#	data_recv = data_recv.replace("NAMESX", "ONETNAMESX")
 
 				try:
 					sock_irc.send(data_recv.encode('iso-8859-2'))

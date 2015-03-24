@@ -3,8 +3,7 @@ Obecnie UCC nie ma możliwości z jego korzystania,
 ale zostanie dodana taka możliwość.
 Tunel nie jest potrzebny do działania UCC,
 bo sam UCC posiada mechanizm autoryzacji do Czata Onetu.
-Jego główne przeznaczenie to stworzenie proxy na zdalnym
-serwerze lub współdziałanie z serwerem sesji ZNC.
+Jego główne przeznaczenie to stworzenie proxy na zdalnym serwerze.
 
 Do działania wymaga trzeciej wersji Pythona.
 Uruchomienie:
