@@ -389,7 +389,8 @@ def auth_start(sock_client, sock_info, con_id):
 
 	# pobranie uoKey i zuoUsername umożliwia dalsze logowanie, tym razem do IRC
 	print("%sRozpoznany użytkownik na Czacie Onetu: %s" % (get_date_time(con_id), zuousername))
-	send_client_info(sock_client, "Rozpoznany użytkownik: \x02%s\r\n\x02authIrcAll..." % zuousername)
+	send_client_info(sock_client, "Rozpoznany użytkownik: \x02%s" % zuousername)
+	send_client_info(sock_client, "\x02authIrcAll...")
 
 	# gniazdo do połączenia z Czatem Onetu
 	sock_irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -458,7 +459,7 @@ def auth_start(sock_client, sock_info, con_id):
 	send_onet_str(sock_client, sock_irc, "AUTHKEY %s" % auth_code(authkey))
 
 	# wyślij do serwera Onetu USER z parametrami
-	send_onet_str(sock_client, sock_irc, "USER * %s czat-app.onet.pl :%s" % (uokey, tunel_name))
+	send_onet_str(sock_client, sock_irc, "USER * %s czat-app.onet.pl :%s\r\n" % (uokey, tunel_name))
 
 	# dodaj gniazda do zestawu select()
 	sock_list = []
@@ -482,8 +483,13 @@ def auth_start(sock_client, sock_info, con_id):
 					sock_irc.close()
 					thread_end(sock_client, con_id)
 
+				data_recv = data_recv.decode('iso-8859-2')
+
+				if "PROTOCTL" in data_recv:
+					data_recv = data_recv.replace("NAMESX", "ONETNAMESX")
+
 				try:
-					sock_irc.send(data_recv)
+					sock_irc.send(data_recv.encode('iso-8859-2'))
 
 				except socket.error:
 					sock_irc.close()
